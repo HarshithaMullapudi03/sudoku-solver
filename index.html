@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sudoku</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Sudoku Solver</h1>
+    <table id="numberTable">
+        {% for row in board %}
+        <tr>
+            {% for cell in row %}
+            <td><input type="text" value="{{ cell if cell != 0 else '' }}" {% if cell != 0 %}readonly{% endif %}></td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="solve">
+        <button type="button" onclick="solve()">Solve</button>
+    </div>
+    <div class="valid">
+        <button type="button" onclick="validate()">Validate</button>
+    </div>
+
+    <script>
+        // Restrict input to numbers between 1 and 9 only
+        const inputs = document.querySelectorAll('#numberTable input');
+        inputs.forEach(input => {
+            input.addEventListener('input', function () {
+                this.value = this.value.replace(/[^1-9]/g, '');
+            });
+        });
+
+        // Function to solve the Sudoku puzzle using backtracking
+        function solveSudoku(board) {
+            const emptyCell = findEmptyCell(board);
+            if (!emptyCell) return true; // Puzzle solved
+
+            const [row, col] = emptyCell;
+
+            for (let num = 1; num <= 9; num++) {
+                if (isValid(board, row, col, num)) {
+                    board[row][col] = num;
+
+                    if (solveSudoku(board)) {
+                        return true;
+                    }
+
+                    board[row][col] = 0; // Backtrack
+                }
+            }
+            return false; // No valid solution
+        }
+
+        function validate() {
+            const board = getBoardFromInputs();
+            
+            // Validate the board row by row, column by column, and 3x3 subgrid by subgrid
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const num = board[row][col];
+                    // Skip empty cells
+                    if (num === 0) {
+                        alert("Sudoku is not solved yet!")
+                        return;
+                    }
+
+                    // Validate the current number in this cell
+                    if (!isValid(board, row, col, num)) {
+                        alert('Solution is invalid at row ' + (row + 1) + ', column ' + (col + 1));
+                        return;
+                    }
+                }
+            }
+            
+            alert('Solution is valid!');
+        }
+
+        // Function to check if a number is valid at a given row, column
+        function isValid(board, row, col, num) {
+            // Check the row
+            for (let i = 0; i < 9; i++) {
+                if (board[row][i] === num && i !== col) {
+                    return false; // Same number found in the row
+                }
+            }
+
+            // Check the column
+            for (let i = 0; i < 9; i++) {
+                if (board[i][col] === num && i !== row) {
+                    return false; // Same number found in the column
+                }
+            }
+
+            // Check the 3x3 subgrid
+            const startRow = Math.floor(row / 3) * 3;
+            const startCol = Math.floor(col / 3) * 3;
+            for (let i = startRow; i < startRow + 3; i++) {
+                for (let j = startCol; j < startCol + 3; j++) {
+                    if (board[i][j] === num && (i !== row || j !== col)) {
+                        return false; // Same number found in the 3x3 subgrid
+                    }
+                }
+            }
+
+            return true; // The number is valid
+        }
+
+
+        function findEmptyCell(board) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] === 0) {
+                        return [row, col];
+                    }
+                }
+            }
+            return null; // No empty cells
+        }
+
+
+        function getBoardFromInputs() {
+            const board = [];
+            document.querySelectorAll('#numberTable input').forEach((input, index) => {
+                const row = Math.floor(index / 9);
+                const col = index % 9;
+                if (!board[row]) board[row] = [];
+                board[row][col] = input.value ? parseInt(input.value) : 0;
+            });
+            return board;
+        }
+
+        function updateBoardInputs(board) {
+            const inputs = document.querySelectorAll('#numberTable input');
+            inputs.forEach((input, index) => {
+                const row = Math.floor(index / 9);
+                const col = index % 9;
+                input.value = board[row][col] !== 0 ? board[row][col] : '';
+            });
+        }
+
+        function solve() {
+            const board = getBoardFromInputs();
+            if (solveSudoku(board)) {
+                updateBoardInputs(board);
+                alert('Sudoku solved!');
+            } else {
+                alert('No solution exists!');
+            }
+        }
+
+    </script>
+</body>
+</html>
